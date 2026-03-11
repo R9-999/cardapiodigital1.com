@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bistro Moderno | Cardápio Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .serif { font-family: 'Playfair Display', serif; }
+        .fade-in { animation: fadeIn 0.6s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .hover-lift { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .category-btn.active { background-color: #1f2937; color: white; }
+        .modal { backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <!-- Header -->
+    <header class="fixed w-full bg-white/90 backdrop-blur-md z-50 border-b border-stone-200">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold serif tracking-tight">BISTRO MODERNO</div>
+            <button onclick="toggleCart()" class="relative p-2 hover:bg-stone-100 rounded-full transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                <span id="cart-count" class="absolute -top-1 -right-1 bg-stone-800 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="pt-32 pb-16 px-6 text-center bg-gradient-to-b from-stone-100 to-stone-50">
+        <h1 class="text-5xl md:text-7xl font-bold mb-4 text-stone-900">Experiência Gastronômica</h1>
+        <p class="text-stone-600 text-lg max-w-2xl mx-auto">Culinária contemporânea com ingredientes selecionados e técnicas refinadas</p>
+    </section>
+
+    <!-- Category Filter -->
+    <div class="sticky top-16 bg-white/95 backdrop-blur z-40 border-b border-stone-200 py-4">
+        <div class="max-w-6xl mx-auto px-6 flex gap-3 overflow-x-auto no-scrollbar">
+            <button onclick="filterCategory('all')" class="category-btn active px-6 py-2 rounded-full border border-stone-300 text-sm font-medium transition whitespace-nowrap">Todos</button>
+            <button onclick="filterCategory('entradas')" class="category-btn px-6 py-2 rounded-full border border-stone-300 text-sm font-medium transition whitespace-nowrap">Entradas</button>
+            <button onclick="filterCategory('principais')" class="category-btn px-6 py-2 rounded-full border border-stone-300 text-sm font-medium transition whitespace-nowrap">Principais</button>
+            <button onclick="filterCategory('sobremesas')" class="category-btn px-6 py-2 rounded-full border border-stone-300 text-sm font-medium transition whitespace-nowrap">Sobremesas</button>
+            <button onclick="filterCategory('bebidas')" class="category-btn px-6 py-2 rounded-full border border-stone-300 text-sm font-medium transition whitespace-nowrap">Bebidas</button>
+        </div>
+    </div>
+
+    <!-- Menu Grid -->
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <div id="menu-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Items will be populated by JS -->
+        </div>
+    </main>
+
+    <!-- Item Modal -->
+    <div id="item-modal" class="modal fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto fade-in">
+            <div class="relative">
+                <img id="modal-img" src="" class="w-full h-64 object-cover">
+                <button onclick="closeModal()" class="absolute top-4 right-4 bg-white/90 p-2 rounded-full hover:bg-white transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-6">
+                <h3 id="modal-title" class="text-2xl font-bold serif mb-2"></h3>
+                <p id="modal-desc" class="text-stone-600 mb-4"></p>
+                <div class="flex items-center justify-between mb-6">
+                    <span id="modal-price" class="text-2xl font-bold text-stone-900"></span>
+                    <div class="flex items-center gap-3 bg-stone-100 rounded-lg p-1">
+                        <button onclick="adjustQty(-1)" class="w-8 h-8 flex items-center justify-center hover:bg-white rounded transition">-</button>
+                        <span id="modal-qty" class="w-8 text-center font-medium">1</span>
+                        <button onclick="adjustQty(1)" class="w-8 h-8 flex items-center justify-center hover:bg-white rounded transition">+</button>
+                    </div>
+                </div>
+                <button onclick="addToCartFromModal()" class="w-full bg-stone-900 text-white py-4 rounded-xl font-medium hover:bg-stone-800 transition flex items-center justify-center gap-2">
+                    <span>Adicionar ao Pedido</span>
+                    <span id="modal-total" class="opacity-75"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="p-6 border-b border-stone-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold serif">Seu Pedido</h2>
+            <button onclick="toggleCart()" class="p-2 hover:bg-stone-100 rounded-full"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <p class="text-stone-500 text-center py-8">Seu carrinho está vazio</p>
+        </div>
+        <div class="p-6 border-t border-stone-200 bg-stone-50">
+            <div class="flex justify-between mb-2 text-sm"><span>Subtotal</span><span id="cart-subtotal">R$ 0,00</span></div>
+            <div class="flex justify-between mb-4 text-sm"><span>Taxa de serviço (10%)</span><span id="cart-tax">R$ 0,00</span></div>
+            <div class="flex justify-between mb-6 text-xl font-bold"><span>Total</span><span id="cart-total">R$ 0,00</span></div>
+            <button onclick="checkout()" class="w-full bg-stone-900 text-white py-4 rounded-xl font-medium hover:bg-stone-800 transition">Finalizar Pedido</button>
+        </div>
+    </div>
+
+    <script>
+        const menuItems = [
+            { id: 1, name: "Carpaccio de Beterraba", category: "entradas", price: 42, desc: "Beterraba marinada, queijo de cabra, nozes caramelizadas e redução de balsâmico", img: "https://images.unsplash.com/photo-1546241072-48010ad2862c?w=600" },
+            { id: 2, name: "Tartar de Atum", category: "entradas", price: 68, desc: "Atum fresco, abacate, gergelim torrado e molho ponzu", img: "https://images.unsplash.com/photo-1546272989-40c92939c6c5?w=600" },
+            { id: 3, name: "Risoto de Funghi", category: "principais", price: 89, desc: "Arroz arbóreo, mix de cogumelos silvestres, trufas negras e parmesão 36 meses", img: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=600" },
+            { id: 4, name: "Filé Mignon ao Molho", category: "principais", price: 125, desc: "250g de filé mignon, molho madeira, purê de batata trufado e aspargos", img: "https://images.unsplash.com/photo-1546833998-877b37c2e5c4?w=600" },
+            { id: 5, name: "Tiramisù Clássico", category: "sobremesas", price: 38, desc: "Mascarpone, café espresso, cacau em pó e biscoitos savoiardi", img: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=600" },
+            { id: 6, name: "Panna Cotta", category: "sobremesas", price: 32, desc: "Creme de leite fresco, baunilha de Madagascar e calda de frutas vermelhas", img: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600" },
+            { id: 7, name: "Negroni Artesanal", category: "bebidas", price: 45, desc: "Gin tônica, Campari, vermute rosso e laranja flamejada", img: "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600" },
+            { id: 8, name: "Vinho Tinto Reserva", category: "bebidas", price: 85, desc: "Cabernet Sauvignon 2018, Vale do Colchagua, Chile", img: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600" }
+        ];
+
+        let cart = [];
+        let currentModalItem = null;
+        let modalQty = 1;
+
+        function renderMenu(category = 'all') {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = '';
+            const filtered = category === 'all' ? menuItems : menuItems.filter(i => i.category === category);
+            
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-2xl overflow-hidden hover-lift cursor-pointer border border-stone-100';
+                card.onclick = () => openModal(item);
+                card.innerHTML = `
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="${item.img}" class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">
+                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-sm font-bold">R$ ${item.price.toFixed(2)}</div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="text-xl font-bold mb-2">${item.name}</h3>
+                        <p class="text-stone-600 text-sm line-clamp-2">${item.desc}</p>
+                        <button class="mt-4 w-full py-2 border border-stone-300 rounded-lg text-sm font-medium hover:bg-stone-50 transition">Ver Detalhes</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterCategory(cat) {
+            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderMenu(cat);
+        }
+
+        function openModal(item) {
+            currentModalItem = item;
+            modalQty = 1;
+            document.getElementById('modal-img').src = item.img;
+            document.getElementById('modal-title').textContent = item.name;
+            document.getElementById('modal-desc').textContent = item.desc;
+            document.getElementById('modal-price').textContent = `R$ ${item.price.toFixed(2)}`;
+            updateModalTotal();
+            document.getElementById('item-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('item-modal').classList.add('hidden');
+        }
+
+        function adjustQty(delta) {
+            modalQty = Math.max(1, modalQty + delta);
+            document.getElementById('modal-qty').textContent = modalQty;
+            updateModalTotal();
+        }
+
+        function updateModalTotal() {
+            const total = (currentModalItem.price * modalQty).toFixed(2);
+            document.getElementById('modal-total').textContent = `R$ ${total}`;
+        }
+
+        function addToCartFromModal() {
+            const existing = cart.find(i => i.id === currentModalItem.id);
+            if (existing) {
+                existing.qty += modalQty;
+            } else {
+                cart.push({ ...currentModalItem, qty: modalQty });
+            }
+            updateCart();
+            closeModal();
+        }
+
+        function updateCart() {
+            const count = cart.reduce((sum, i) => sum + i.qty, 0);
+            const badge = document.getElementById('cart-count');
+            badge.textContent = count;
+            badge.classList.toggle('hidden', count === 0);
+
+            const container = document.getElementById('cart-items');
+            if (cart.length === 0) {
+                container.innerHTML = '<p class="text-stone-500 text-center py-8">Seu carrinho está vazio</p>';
+            } else {
+                container.innerHTML = cart.map(item => `
+                    <div class="flex gap-4 bg-stone-50 p-4 rounded-xl">
+                        <img src="${item.img}" class="w-20 h-20 object-cover rounded-lg">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-sm">${item.name}</h4>
+                            <p class="text-stone-600 text-sm">R$ ${item.price.toFixed(2)} x ${item.qty}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <button onclick="updateCartQty(${item.id}, -1)" class="w-6 h-6 bg-white rounded flex items-center justify-center text-sm border">-</button>
+                                <span class="text-sm font-medium">${item.qty}</span>
+                                <button onclick="updateCartQty(${item.id}, 1)" class="w-6 h-6 bg-white rounded flex items-center justify-center text-sm border">+</button>
+                                <button onclick="removeFromCart(${item.id})" class="ml-auto text-red-500 text-xs">Remover</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const tax = subtotal * 0.1;
+            document.getElementById('cart-subtotal').textContent = `R$ ${subtotal.toFixed(2)}`;
+            document.getElementById('cart-tax').textContent = `R$ ${tax.toFixed(2)}`;
+            document.getElementById('cart-total').textContent = `R$ ${(subtotal + tax).toFixed(2)}`;
+        }
+
+        function updateCartQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            item.qty = Math.max(1, item.qty + delta);
+            updateCart();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateCart();
+        }
+
+        function toggleCart() {
+            const sidebar = document.getElementById('cart-sidebar');
+            sidebar.classList.toggle('translate-x-full');
+        }
+
+        function checkout() {
+            if (cart.length === 0) return;
+            alert('Pedido enviado para a cozinha! Obrigado pela preferência.');
+            cart = [];
+            updateCart();
+            toggleCart();
+        }
+
+        renderMenu();
+    </script>
+</body>
+</html>
